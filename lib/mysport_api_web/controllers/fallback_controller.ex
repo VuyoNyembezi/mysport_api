@@ -14,7 +14,13 @@ defmodule MysportApiWeb.FallbackController do
     |> render(:"404")
   end
 
-
+# This clause is to handle unauthorized access action.
+  def call(conn, {:error, :unauthorized}) do
+    conn
+    |> put_status(:unauthorized)
+    |> put_view(MysportApiWeb.ErrorView)
+    |> render(:"401")
+  end
 
   # this clause handles error returned by Ecto's insert/update/delete
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
@@ -24,11 +30,5 @@ defmodule MysportApiWeb.FallbackController do
     |> render("error.json", changeset: changeset)
   end
 
-  def call(conn, {:error, :unauthorized}) do
-    conn
-    |> put_status(:unauthorized)
-    |> put_view(MysportApiWeb.ErrorView)
-    |> render(:"401")
-  end
 
 end

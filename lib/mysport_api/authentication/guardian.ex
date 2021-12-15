@@ -21,26 +21,26 @@ defmodule MysportApi.Authentication.Guardian do
   #   {:error, :reason_for_error}
   # end
 
-  def authenticate(email, password) do
-    with {:ok, user} <- Accounts.get_by_email(email) do
-      case validate_password(password, user.password_hash) do
-        true ->
-        IO.puts("signed in")
-          create_token(user)
-        false ->
-          IO.puts("please check input")
-          {:error, :unauthorized}
-      end
-    end
-  end
+  # def authenticate(email, password) do
+  #   with {:ok, user} <- Accounts.get_by_email(email) do
+  #     case validate_password(password, user.password_hash) do
+  #       true ->
+  #       IO.puts("signed in")
+  #         create_token(user)
+  #       false ->
+  #         IO.puts("please check input")
+  #         {:error, :unauthorized}
+  #     end
+  #   end
+  # end
 
-  defp validate_password(password, password_hash) do
-    Pbkdf2.verify_pass(password, password_hash)
-  end
+  # defp validate_password(password, password_hash) do
+  #   Pbkdf2.verify_pass(password, password_hash)
+  # end
 
-  defp create_token(user) do
-    {:ok, token, _claims} = encode_and_sign(user)
-    {:ok, user, token}
-  end
+  # defp create_token(user) do
+  #   {:ok, token, _claims} = encode_and_sign(user)
+  #   {:ok, user, token}
+  # end
 
 end

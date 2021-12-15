@@ -83,13 +83,33 @@ defmodule MysportApi.Accounts do
   end
 
   def authenticate_user(email, password) do
-    with {:ok, user} <- get_by_email(email) do
+    case get_by_email(email) do
+      {:ok, user} ->
       case validate_password(password, user.password_hash) do
-        true -> create_token(user)
+        true -> {:ok, user}
         false -> {:error, :unauthorized}
       end
+      {:error, :not_found} ->
+        {:error, :unauthorized}
     end
   end
+
+  #for the controller with cookie generator
+
+  def authenticate_tester(email, password) do
+    case get_by_email(email) do
+      {:ok, user} ->
+      case validate_password(password, user.password_hash) do
+        true -> {:ok, user}
+        false -> {:error, :unauthorized}
+      end
+      {:error, :not_found} ->
+        {:error, :unauthorized}
+    end
+  end
+
+
+
 
 
   def validate_password(password, password_hash) do

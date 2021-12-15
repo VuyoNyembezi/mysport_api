@@ -28,13 +28,26 @@ defmodule MysportApiWeb.UserView do
     }
   end
 
+  #view for sign in with cookies with cookies
+  def render("token.json", %{access_token: access_token}) do
+    %{
+      access_token: access_token
+    }
+  end
+  #  #view for refresh generator
+  # def render("tokens.json", %{access_token: access_token}) do
+  #   %{
+  #     access_token: access_token
+  #   }
+  # end
 
   def render("auth.json", %{token: token}) do
     %{
       token: token
     }
   end
+
     def render("shownew.json", %{user: user}) do
     %{data: render_one(user, UserView, "signedup.json")}
-  end
+    end
 end

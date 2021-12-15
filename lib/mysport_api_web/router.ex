@@ -4,16 +4,27 @@ defmodule MysportApiWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
   end
+  pipeline :auth do
+    plug MysportApi.Authentication.Pipeline
+  end
 
   scope "/api", MysportApiWeb do
     pipe_through :api
 
     post "/users/signup", UserController, :signup
-    post "/users/signin", UserController, :signintest
-    resources "/users", UserController, except: [:new, :edit]
+    post "/users/signin", UserController, :signin
+
+    # get "/depots/all", DepotController, :index
+    post "/depots/add", DepotController, :create
+
+  end
 
 
-
+  scope "/api", MysportApiWeb do
+    pipe_through [:api, :auth]
+    get "/depots/all", DepotController, :index
+    post "/users/refresh", UserController, :refresh
+    post "/users/delete", UserController, :delete
 
   end
 

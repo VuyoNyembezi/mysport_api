@@ -14,7 +14,6 @@ defmodule MysportApiWeb.UserController do
     render(conn, "index.json", users: users)
   end
 
-
   def signup(conn, %{"user" => user_params}) do
     with {:ok, %User{} = user} <- Accounts.sign_up(user_params) do
       conn
@@ -23,67 +22,50 @@ defmodule MysportApiWeb.UserController do
     end
   end
 
+  #sign in controller with cookie generator for reresh token
 
-  def signin(email, password) do
-    with {:ok, %User{}= user} <- Accounts.get_by_email(email) do
-      case validate_password(password, user.password_hash) do
-        true ->
-          create_token(user)
-        false ->
-          {:error, :unauthorized}
-      end
+  def signin(conn, %{"email" => email,"password" => password}) do
+
+    case Accounts.authenticate_tester(email, password) do
+      {:ok, user} ->
+        {:ok, access_token, _claims} =
+        Guardian.encode_and_sign(user, %{}, token_type: "access", ttl: {15, :minute})
+
+      {:ok, refresh_token, _claims} =
+      Guardian.encode_and_sign(user, %{}, token_type: "refresh", ttl: {5, :day})
+      conn
+      |> put_resp_cookie("ruid", refresh_token)
+      |> put_status(:created)
+      |> render("token.json",access_token: access_token)
+
+    {:error, :unauthorized} ->
+      body = Jason.encode!(%{error: "unauthorized wrong input"})
+      conn
+      |> send_resp(401, body)
     end
   end
 
+  def refresh(conn, _params) do
+    refresh_token =
+    Plug.Conn.fetch_cookies(conn) |> Map.from_struct() |> get_in([:cookies, "ruid"])
 
-
-
-
-  def signintest(conn, %{"email" => email, "password" => password}) do
-    case Accounts.authenticate_user(email, password) do
-      {:ok,user,token} ->
-      conn
-        |> render("user.json", %{user: user, token: token})
+    case Guardian.exchange(refresh_token, "refresh", "access") do
+      {:ok, _old_stuff, {new_access_token, _new_claims}} ->
+        conn
+        |> put_status(:created)
+        |> render("token.json",%{access_token: new_access_token})
       {:error, :unauthorized} ->
         body = Jason.encode!(%{error: "unauthorized"})
         conn
-         |> send_resp(401, body)
-    end
-   end
-
-
-
-  def show(conn, %{"id" => id}) do
-    user = Accounts.get_user!(id)
-    render(conn, "show.json", user: user)
-  end
-
-  def update(conn, %{"id" => id, "user" => user_params}) do
-    user = Accounts.get_user!(id)
-
-    with {:ok, %User{} = user} <- Accounts.update_user(user, user_params) do
-      render(conn, "show.json", user: user)
+        |> send_resp(401, body)
     end
   end
 
-  def delete(conn, %{"id" => id}) do
-    user = Accounts.get_user!(id)
-
-    with {:ok, %User{}} <- Accounts.delete_user(user) do
-      send_resp(conn, :no_content, "")
-    end
-  end
-
-
-
-   #these functions are used for authentication
-   defp validate_password(password, password_hash) do
-    Pbkdf2.verify_pass(password, password_hash)
-  end
-
-  defp create_token(user) do
-    {:ok, token, _claims} = Guardian.encode_and_sign(user)
-    {:ok, user, token}
+  def  delete(conn, _params) do
+    conn
+      |> delete_resp_cookie("ruid")
+      |> put_status(200)
+      |> text("Log out successfully")
   end
 
 end
